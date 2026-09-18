@@ -16,12 +16,3 @@ Once configured: roster sync runs every 20-30 minutes (randomized per client
 so a few hundred members don't all sync at once), and live data sends
 batched updates (never more than once every ~15s) for as long as you're
 logged in.
-
-## Development
-
-```
-./gradlew run
-```
-
-This launches a local RuneLite client with the plugin loaded, per the
-[Plugin Hub development guide](https://github.com/runelite/plugin-hub#developing-plugins).
