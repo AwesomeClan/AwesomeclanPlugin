@@ -3,6 +3,7 @@ package com.awesomeclan;
 import com.google.gson.Gson;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -26,10 +27,24 @@ class RosterUploader
 	@Inject
 	private OkHttpClient okHttpClient;
 
+	@Inject
+	private AwesomeClanConfig config;
+
 	private volatile boolean requestInFlight;
 
 	void upload(RosterPayload payload)
 	{
+		// Roster sync isn't tied to a specific character the way live data is,
+		// so any one configured token proves clan membership -- just use the
+		// first. The server requires this same per-member token; without one
+		// configured there's nothing to authenticate with, so skip the
+		// request entirely rather than send one we know will fail auth.
+		List<String> tokens = PluginTokens.parse(config.pluginToken());
+		if (tokens.isEmpty())
+		{
+			return;
+		}
+
 		if (requestInFlight)
 		{
 			return;
@@ -40,6 +55,7 @@ class RosterUploader
 			.post(RequestBody.create(JSON, gson.toJson(payload).getBytes(StandardCharsets.UTF_8)))
 			.header("Content-Type", JSON.toString())
 			.header("Accept", "application/json")
+			.header("Authorization", "Bearer " + tokens.get(0))
 			.build();
 
 		requestInFlight = true;
