@@ -9,8 +9,8 @@ public interface AwesomeClanConfig extends Config
 {
 	@ConfigItem(
 		keyName = "pluginToken",
-		name = "Live data token(s)",
-		description = "Paste a personal token from the dashboard's account page (Generate token) to show your XP and boss kills live while you play. Playing multiple accounts? Generate one token per account and separate them with commas - the plugin figures out which token matches whichever character is logged in. Leave blank to disable."
+		name = "Plugin tokens",
+		description = "Paste a personal token from the dashboard's account page (Generate token) - used for both roster sync and live XP/boss-kill data. Playing multiple accounts? Put one token per line, one per account (e.g. main on the first line, each alt on its own line below) - the plugin figures out which token matches whichever character is logged in. Leave blank to disable live data (roster sync still needs at least one token)."
 	)
 	default String pluginToken()
 	{

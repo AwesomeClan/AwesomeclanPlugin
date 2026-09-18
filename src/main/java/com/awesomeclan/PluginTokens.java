@@ -17,7 +17,7 @@ final class PluginTokens
 			return List.of();
 		}
 
-		return Arrays.stream(raw.split(","))
+		return Arrays.stream(raw.split("\\r?\\n"))
 			.map(String::trim)
 			.filter(s -> !s.isEmpty())
 			.collect(Collectors.toList());
