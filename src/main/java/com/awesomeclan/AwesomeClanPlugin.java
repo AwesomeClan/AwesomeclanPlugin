@@ -1,5 +1,10 @@
 package com.awesomeclan;
 
+import com.awesomeclan.api.ApiClient;
+import com.awesomeclan.clan.ClanBroadcastTracker;
+import com.awesomeclan.clan.CofferBalanceReader;
+import com.awesomeclan.live.LiveDataTracker;
+import com.awesomeclan.roster.RosterCollector;
 import com.google.inject.Provides;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -7,6 +12,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import javax.inject.Inject;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
+import net.runelite.api.clan.ClanChannel;
 import net.runelite.api.clan.ClanSettings;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
@@ -21,7 +27,8 @@ import net.runelite.client.task.Schedule;
 )
 public class AwesomeClanPlugin extends Plugin
 {
-	private static final String CLAN_NAME = "AwesomeClan";
+	public static final String CLAN_NAME = "AwesomeClan";
+
 	private static final int SYNC_INTERVAL_MINUTES = 20;
 	private static final int SYNC_JITTER_MINUTES = 10;
 	private static final int LIVE_FLUSH_PERIOD_SECONDS = 15;
@@ -30,13 +37,19 @@ public class AwesomeClanPlugin extends Plugin
 	private Client client;
 
 	@Inject
-	private RosterUploader uploader;
+	private ApiClient api;
 
 	@Inject
 	private EventBus eventBus;
 
 	@Inject
 	private LiveDataTracker liveDataTracker;
+
+	@Inject
+	private ClanBroadcastTracker clanBroadcastTracker;
+
+	@Inject
+	private CofferBalanceReader cofferBalanceReader;
 
 	private Instant nextSyncAt;
 
@@ -51,13 +64,18 @@ public class AwesomeClanPlugin extends Plugin
 	{
 		nextSyncAt = nextSyncTime();
 		eventBus.register(liveDataTracker);
+		eventBus.register(clanBroadcastTracker);
+		eventBus.register(cofferBalanceReader);
 	}
 
 	@Override
 	protected void shutDown()
 	{
 		nextSyncAt = null;
+		liveDataTracker.flushOnShutdown();
 		eventBus.unregister(liveDataTracker);
+		eventBus.unregister(clanBroadcastTracker);
+		eventBus.unregister(cofferBalanceReader);
 		liveDataTracker.reset();
 	}
 
@@ -93,7 +111,13 @@ public class AwesomeClanPlugin extends Plugin
 			return;
 		}
 
-		uploader.upload(RosterCollector.collect(clanSettings));
+		api.post("clan/roster", RosterCollector.collect(clanSettings));
+	}
+
+	public static boolean inClan(Client client)
+	{
+		ClanChannel channel = client.getClanChannel();
+		return channel != null && CLAN_NAME.equalsIgnoreCase(channel.getName());
 	}
 
 	private static Instant nextSyncTime()

@@ -2,17 +2,15 @@
 
 ![AwesomeClan](banner.png)
 
-Keeps the AwesomeClan roster synced with the clan website, and can show your
-XP and boss kills live on your dashboard account page while you're playing,
-instead of waiting for the next hiscores refresh.
+Keeps the AwesomeClan roster synced with the clan website and shows your XP
+and boss kills live on the dashboard while you play, so you don't have to wait
+for the next hiscores refresh. It also picks up kick, recruit and coffer
+broadcasts from clan chat so the website can log them.
 
-Both features need a personal token: generate one from your account page on
-the dashboard (Member portal → Profile) and paste it into this plugin's
-settings. One token covers everything — roster sync, live data, and any
-linked alts. Without a token configured, the plugin does nothing; it never
-sends requests it knows will be rejected.
+You need a personal token for any of this. Generate one on the dashboard
+(Member portal > Profile) and paste it into the plugin settings. If you play
+alts, put each account's token on its own line. With no token set the plugin
+doesn't send anything.
 
-Once configured: roster sync runs every 20-30 minutes (randomized per client
-so a few hundred members don't all sync at once), and live data sends
-batched updates (never more than once every ~15s) for as long as you're
-logged in.
+Roster sync runs every 20-30 minutes. Live data goes out in batches about
+every 15 seconds while you're logged in.

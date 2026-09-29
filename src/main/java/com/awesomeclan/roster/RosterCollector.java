@@ -1,4 +1,4 @@
-package com.awesomeclan;
+package com.awesomeclan.roster;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -9,7 +9,7 @@ import net.runelite.api.clan.ClanRank;
 import net.runelite.api.clan.ClanSettings;
 import net.runelite.api.clan.ClanTitle;
 
-final class RosterCollector
+public final class RosterCollector
 {
 	private static final String DEFAULT_CLAN_NAME = "AwesomeClan";
 
@@ -17,7 +17,7 @@ final class RosterCollector
 	{
 	}
 
-	static RosterPayload collect(ClanSettings clanSettings)
+	public static RosterPayload collect(ClanSettings clanSettings)
 	{
 		Map<String, Integer> hierarchy = new LinkedHashMap<>();
 		for (int i = -1; i <= 127; i++)

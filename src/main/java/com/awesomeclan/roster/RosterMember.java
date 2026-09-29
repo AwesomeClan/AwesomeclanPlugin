@@ -1,4 +1,4 @@
-package com.awesomeclan;
+package com.awesomeclan.roster;
 
 import lombok.Value;
 

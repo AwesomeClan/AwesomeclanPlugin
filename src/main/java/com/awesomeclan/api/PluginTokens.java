@@ -1,16 +1,16 @@
-package com.awesomeclan;
+package com.awesomeclan.api;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-final class PluginTokens
+public final class PluginTokens
 {
 	private PluginTokens()
 	{
 	}
 
-	static List<String> parse(String raw)
+	public static List<String> parse(String raw)
 	{
 		if (raw == null)
 		{

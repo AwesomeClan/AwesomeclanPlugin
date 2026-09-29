@@ -1,5 +1,6 @@
-package com.awesomeclan;
+package com.awesomeclan.live;
 
+import com.awesomeclan.util.AccountId;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -17,36 +18,18 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
 
 /**
- * Watches XP and boss kill-count changes while logged in and hands batched
- * updates to {@link LiveUploader} every ~15s (via {@link #flushPeriodic()},
- * called from AwesomeClanPlugin's own {@code @Schedule} method) plus an
- * immediate flush on logout. Registered on/unregistered from the EventBus by
- * AwesomeClanPlugin's startUp()/shutDown() -- this class does not manage its
- * own subscription.
+ * Collects XP and kill count changes and sends them every 15s while logged in.
+ * It sends even when nothing changed, so the server knows you're still online.
  */
 @Slf4j
-class LiveDataTracker
+public class LiveDataTracker
 {
-	// A handful of skills where RuneLite's Skill enum display name doesn't
-	// match the server's canonical hiscore category name (see SKILL_NAMES in
-	// the server's app/services/hiscore_service.py). The server silently
-	// drops anything it doesn't recognise, so a missing/wrong alias here
-	// just means that skill never shows up live -- not a hard failure -- but
-	// keeping this in sync avoids that.
-	private static final Map<String, String> SKILL_NAME_OVERRIDES = new LinkedHashMap<>();
-	static
-	{
-		SKILL_NAME_OVERRIDES.put("Runecraft", "Runecrafting");
-	}
+	// RuneLite names that differ from the hiscores names the server uses
+	private static final Map<String, String> SKILL_NAME_OVERRIDES = Map.of("Runecraft", "Runecrafting");
 
-	// Matches the family of OSRS kill-count game messages, e.g.:
-	//   "Your Zulrah kill count is: 412."
-	//   "Your completed Barrows Chests count is: 100."
-	//   "Your Chambers of Xeric completion count is: 5."
-	// The one qualifier word ("kill"/"completed"/"completion"/...) can land
-	// either right after "Your" or right before "count is:" depending on the
-	// boss/activity, so both slots are optional single words and the name
-	// itself is captured non-greedily in between.
+	// "Your Zulrah kill count is: 412."
+	// "Your completed Barrows Chests count is: 100."
+	// "Your Chambers of Xeric completion count is: 5."
 	private static final Pattern KILL_COUNT_PATTERN = Pattern.compile(
 		"^Your (?:\\w+ )?(.+?) (?:\\w+ )?count is: ([0-9,]+)\\.$",
 		Pattern.CASE_INSENSITIVE
@@ -62,7 +45,10 @@ class LiveDataTracker
 	private final Map<String, Integer> pendingSkillXp = new LinkedHashMap<>();
 	private final Map<String, Integer> pendingBossKc = new LinkedHashMap<>();
 
-	void reset()
+	private long cachedAccountHash = -1;
+	private String cachedAccountId;
+
+	public void reset()
 	{
 		lastKnownSkillXp.clear();
 		pendingSkillXp.clear();
@@ -77,17 +63,10 @@ class LiveDataTracker
 		int xp = event.getXp();
 
 		Integer previous = lastKnownSkillXp.put(name, xp);
-		if (previous == null)
+		// first event per skill is the login sync, and boosts/drains fire
+		// this too without an xp change
+		if (previous == null || previous == xp)
 		{
-			// First StatChanged for this skill this session is RuneLite
-			// syncing the client's current total on login, not a real gain
-			// -- record it as the baseline and queue nothing yet.
-			return;
-		}
-		if (previous == xp)
-		{
-			// A pure stat-boost/drain event (potion, prayer drain, ...)
-			// fires StatChanged too, but with unchanged true xp.
 			return;
 		}
 
@@ -129,27 +108,32 @@ class LiveDataTracker
 			flush(true);
 			reset();
 		}
+		else if (event.getGameState() == GameState.LOGGED_IN)
+		{
+			// may no-op if the local player isn't set yet, the periodic flush covers it
+			flush(false);
+		}
 	}
 
-	/** Called every ~15s from AwesomeClanPlugin's own {@code @Schedule}
-	 * method -- see that class for why this isn't a {@code @Schedule} method
-	 * on this class directly. */
-	void flushPeriodic()
+	public void flushPeriodic()
 	{
-		if (client.getGameState() != GameState.LOGGED_IN)
+		if (client.getGameState() == GameState.LOGGED_IN)
 		{
-			return;
+			flush(false);
 		}
-		flush(false);
+	}
+
+	// Closing the client while logged in never goes through LOGIN_SCREEN
+	public void flushOnShutdown()
+	{
+		if (client.getGameState() == GameState.LOGGED_IN)
+		{
+			flush(true);
+		}
 	}
 
 	private void flush(boolean loggedOut)
 	{
-		if (!loggedOut && pendingSkillXp.isEmpty() && pendingBossKc.isEmpty())
-		{
-			return;
-		}
-
 		if (client.getLocalPlayer() == null || client.getLocalPlayer().getName() == null)
 		{
 			return;
@@ -162,6 +146,7 @@ class LiveDataTracker
 
 		LivePayload payload = new LivePayload(
 			rsn,
+			accountId(),
 			!loggedOut,
 			loggedOut,
 			new LinkedHashMap<>(pendingSkillXp),
@@ -171,6 +156,19 @@ class LiveDataTracker
 		uploader.upload(payload);
 		pendingSkillXp.clear();
 		pendingBossKc.clear();
+	}
+
+	// Checked every flush since the hash changes when you switch accounts
+	// without restarting the client.
+	private String accountId()
+	{
+		long hash = client.getAccountHash();
+		if (hash != cachedAccountHash)
+		{
+			cachedAccountHash = hash;
+			cachedAccountId = AccountId.of(hash);
+		}
+		return cachedAccountId;
 	}
 
 	private static String canonicalSkillName(Skill skill)
