@@ -1,5 +1,6 @@
 package com.awesomeclan.roster;
 
+import com.awesomeclan.AwesomeClanPlugin;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -11,8 +12,6 @@ import net.runelite.api.clan.ClanTitle;
 
 public final class RosterCollector
 {
-	private static final String DEFAULT_CLAN_NAME = "AwesomeClan";
-
 	private RosterCollector()
 	{
 	}
@@ -46,7 +45,7 @@ public final class RosterCollector
 		String clanName = normalizeName(clanSettings.getName());
 		if (clanName == null || clanName.isEmpty())
 		{
-			clanName = DEFAULT_CLAN_NAME;
+			clanName = AwesomeClanPlugin.CLAN_NAME;
 		}
 
 		return new RosterPayload(clanName, members, hierarchy);

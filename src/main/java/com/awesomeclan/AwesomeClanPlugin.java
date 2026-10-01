@@ -2,6 +2,7 @@ package com.awesomeclan;
 
 import com.awesomeclan.api.ApiClient;
 import com.awesomeclan.clan.ClanBroadcastTracker;
+import com.awesomeclan.clan.ClanChatRelay;
 import com.awesomeclan.clan.CofferBalanceReader;
 import com.awesomeclan.live.LiveDataTracker;
 import com.awesomeclan.roster.RosterCollector;
@@ -22,7 +23,7 @@ import net.runelite.client.task.Schedule;
 
 @PluginDescriptor(
 	name = "AwesomeClan",
-	description = "Keeps the AwesomeClan roster synced with the clan website, and optionally shows your XP/boss kills live on the dashboard while you play",
+	description = "Keeps the AwesomeClan roster synced with the clan website, and optionally shows your XP/boss kills live and relays clan chat to the dashboard",
 	tags = {"clan", "roster", "awesomeclan"}
 )
 public class AwesomeClanPlugin extends Plugin
@@ -32,6 +33,7 @@ public class AwesomeClanPlugin extends Plugin
 	private static final int SYNC_INTERVAL_MINUTES = 20;
 	private static final int SYNC_JITTER_MINUTES = 10;
 	private static final int LIVE_FLUSH_PERIOD_SECONDS = 15;
+	private static final int CHAT_FLUSH_PERIOD_SECONDS = 5;
 
 	@Inject
 	private Client client;
@@ -51,6 +53,9 @@ public class AwesomeClanPlugin extends Plugin
 	@Inject
 	private CofferBalanceReader cofferBalanceReader;
 
+	@Inject
+	private ClanChatRelay clanChatRelay;
+
 	private Instant nextSyncAt;
 
 	@Provides
@@ -66,6 +71,7 @@ public class AwesomeClanPlugin extends Plugin
 		eventBus.register(liveDataTracker);
 		eventBus.register(clanBroadcastTracker);
 		eventBus.register(cofferBalanceReader);
+		eventBus.register(clanChatRelay);
 	}
 
 	@Override
@@ -73,16 +79,25 @@ public class AwesomeClanPlugin extends Plugin
 	{
 		nextSyncAt = null;
 		liveDataTracker.flushOnShutdown();
+		clanChatRelay.flush();
 		eventBus.unregister(liveDataTracker);
 		eventBus.unregister(clanBroadcastTracker);
 		eventBus.unregister(cofferBalanceReader);
+		eventBus.unregister(clanChatRelay);
 		liveDataTracker.reset();
+		clanChatRelay.reset();
 	}
 
 	@Schedule(period = LIVE_FLUSH_PERIOD_SECONDS, unit = ChronoUnit.SECONDS)
 	public void flushLiveData()
 	{
 		liveDataTracker.flushPeriodic();
+	}
+
+	@Schedule(period = CHAT_FLUSH_PERIOD_SECONDS, unit = ChronoUnit.SECONDS)
+	public void flushClanChat()
+	{
+		clanChatRelay.flush();
 	}
 
 	@Schedule(period = 5, unit = ChronoUnit.MINUTES)

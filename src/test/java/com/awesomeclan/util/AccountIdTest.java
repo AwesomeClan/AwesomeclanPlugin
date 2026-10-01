@@ -6,9 +6,7 @@ import org.junit.Test;
 
 public class AccountIdTest
 {
-	// Expected values computed independently as
-	// sha224(big-endian int64 hash + Dink padding).hexdigest() -- if these
-	// break, the IDs no longer match Dink's or previously stored ones.
+	// checked against python hashlib, these must never change
 	@Test
 	public void matchesDinkFormat()
 	{

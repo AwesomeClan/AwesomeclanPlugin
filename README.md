@@ -14,3 +14,7 @@ doesn't send anything.
 
 Roster sync runs every 20-30 minutes. Live data goes out in batches about
 every 15 seconds while you're logged in.
+
+There's also a "Relay clan chat" option, off by default. Turning it on sends
+the AwesomeClan clan chat and clan broadcasts you see to the dashboard so staff
+can read them there. Public chat and PMs are never sent.

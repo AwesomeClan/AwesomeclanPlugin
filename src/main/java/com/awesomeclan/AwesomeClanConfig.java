@@ -16,4 +16,15 @@ public interface AwesomeClanConfig extends Config
 	{
 		return "";
 	}
+
+	@ConfigItem(
+		keyName = "relayClanChat",
+		name = "Relay clan chat",
+		description = "Send clan chat and clan broadcasts to the dashboard",
+		warning = "This sends all AwesomeClan clan chat you see, including other members' messages, to the dashboard where staff can read it. Public chat and PMs are never sent. Turn it on?"
+	)
+	default boolean relayClanChat()
+	{
+		return false;
+	}
 }

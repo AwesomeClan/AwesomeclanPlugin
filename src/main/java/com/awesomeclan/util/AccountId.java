@@ -7,11 +7,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Hashed account ID, stable across name changes. Uses the same hash as Dink's
- * dinkAccountHash so the IDs line up with Dink's. Don't change the padding,
- * the server has these stored.
- */
+// Same as Dink's dinkAccountHash. Don't change it, the server has these stored.
 @Slf4j
 public final class AccountId
 {
@@ -22,7 +18,6 @@ public final class AccountId
 	{
 	}
 
-	/** Null before login (account hash is -1). */
 	public static String of(long accountHash)
 	{
 		if (accountHash == -1)

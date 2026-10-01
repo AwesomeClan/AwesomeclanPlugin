@@ -12,15 +12,8 @@ import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
 
-/**
- * Each token belongs to one account and the server rejects the others, so
- * with several tokens configured we try them in turn until one is accepted,
- * then stick with it until logout.
- *
- * Only one request runs at a time. If another payload comes in meanwhile we
- * keep the newest one and send it after, so the logout payload doesn't get
- * dropped.
- */
+// Tokens are per account, so with alts we try each until one works and keep it
+// until logout. One request at a time, the newest payload waits so logout isn't lost.
 @Slf4j
 class LiveUploader
 {

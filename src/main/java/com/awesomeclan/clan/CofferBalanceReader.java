@@ -12,10 +12,7 @@ import net.runelite.api.gameval.ItemID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.eventbus.Subscribe;
 
-/**
- * Sends the real coffer balance when someone opens the clan coffer, to fix up
- * the running total if a deposit/withdraw broadcast was missed.
- */
+// Corrects the coffer total on the site in case a broadcast got missed
 public class CofferBalanceReader
 {
 	@Inject

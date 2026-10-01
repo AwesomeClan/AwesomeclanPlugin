@@ -17,14 +17,10 @@ import net.runelite.api.events.StatChanged;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
 
-/**
- * Collects XP and kill count changes and sends them every 15s while logged in.
- * It sends even when nothing changed, so the server knows you're still online.
- */
 @Slf4j
 public class LiveDataTracker
 {
-	// RuneLite names that differ from the hiscores names the server uses
+	// server uses the hiscores names
 	private static final Map<String, String> SKILL_NAME_OVERRIDES = Map.of("Runecraft", "Runecrafting");
 
 	// "Your Zulrah kill count is: 412."
@@ -63,8 +59,7 @@ public class LiveDataTracker
 		int xp = event.getXp();
 
 		Integer previous = lastKnownSkillXp.put(name, xp);
-		// first event per skill is the login sync, and boosts/drains fire
-		// this too without an xp change
+		// skip the login sync and boosts/drains
 		if (previous == null || previous == xp)
 		{
 			return;
@@ -87,16 +82,13 @@ public class LiveDataTracker
 			return;
 		}
 
-		String bossName = matcher.group(1).trim();
-		String count = matcher.group(2).replace(",", "");
-
 		try
 		{
-			pendingBossKc.put(bossName, Integer.parseInt(count));
+			pendingBossKc.put(matcher.group(1).trim(), Integer.parseInt(matcher.group(2).replace(",", "")));
 		}
 		catch (NumberFormatException e)
 		{
-			log.debug("Could not parse kill count from chat message: {}", event.getMessage());
+			log.debug("Bad kc: {}", event.getMessage());
 		}
 	}
 
@@ -110,7 +102,6 @@ public class LiveDataTracker
 		}
 		else if (event.getGameState() == GameState.LOGGED_IN)
 		{
-			// may no-op if the local player isn't set yet, the periodic flush covers it
 			flush(false);
 		}
 	}
@@ -123,7 +114,7 @@ public class LiveDataTracker
 		}
 	}
 
-	// Closing the client while logged in never goes through LOGIN_SCREEN
+	// closing the client while logged in skips LOGIN_SCREEN
 	public void flushOnShutdown()
 	{
 		if (client.getGameState() == GameState.LOGGED_IN)
@@ -158,8 +149,7 @@ public class LiveDataTracker
 		pendingBossKc.clear();
 	}
 
-	// Checked every flush since the hash changes when you switch accounts
-	// without restarting the client.
+	// can change if you switch accounts without restarting
 	private String accountId()
 	{
 		long hash = client.getAccountHash();

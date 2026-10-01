@@ -3,3 +3,6 @@ build/
 out/
 .idea/
 *.iml
+.vscode/
+bin/
+CLAUDE.md

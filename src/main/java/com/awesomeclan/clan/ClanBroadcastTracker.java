@@ -14,11 +14,6 @@ import net.runelite.api.events.ChatMessage;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
 
-/**
- * Reports clan broadcasts for kicks, recruits and coffer deposits/withdrawals.
- * Every online member gets these, so they're picked up even if the person
- * doing the kicking/depositing doesn't run the plugin.
- */
 @Slf4j
 public class ClanBroadcastTracker
 {
@@ -74,8 +69,7 @@ public class ClanBroadcastTracker
 			return;
 		}
 
-		// Everyone online reports the same broadcast. The server uses the
-		// account ID to count it once.
+		// everyone online sends this, server dedupes on account id
 		String accountId = AccountId.of(client.getAccountHash());
 		api.post("clan/coffer", new CofferTransaction(AwesomeClanPlugin.CLAN_NAME, accountId, m.group(1).trim(), amount, type));
 	}

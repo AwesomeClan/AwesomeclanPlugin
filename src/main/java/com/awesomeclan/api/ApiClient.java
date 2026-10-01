@@ -33,11 +33,7 @@ public class ApiClient
 	@Inject
 	private AwesomeClanConfig config;
 
-	/**
-	 * Fire-and-forget POST for clan-wide data (roster, kicks, coffer, ...).
-	 * Any of the user's tokens proves they're in the clan, so this uses the
-	 * first one. Does nothing if no token is set.
-	 */
+	// clan-wide stuff, any of the tokens works so just use the first
 	public void post(String path, Object payload)
 	{
 		List<String> tokens = PluginTokens.parse(config.pluginToken());
