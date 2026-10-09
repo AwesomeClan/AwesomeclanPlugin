@@ -33,10 +33,15 @@ public class ApiClient
 	@Inject
 	private AwesomeClanConfig config;
 
+	public List<String> tokens()
+	{
+		return PluginTokens.parse(config.pluginToken());
+	}
+
 	// clan-wide stuff, any of the tokens works so just use the first
 	public void post(String path, Object payload)
 	{
-		List<String> tokens = PluginTokens.parse(config.pluginToken());
+		List<String> tokens = tokens();
 		if (tokens.isEmpty())
 		{
 			return;
@@ -70,5 +75,19 @@ public class ApiClient
 			.header("Authorization", "Bearer " + token)
 			.build();
 		return okHttpClient.newCall(request);
+	}
+
+	public Call newGet(HttpUrl url, String token)
+	{
+		Request request = new Request.Builder()
+			.url(url)
+			.header("Authorization", "Bearer " + token)
+			.build();
+		return okHttpClient.newCall(request);
+	}
+
+	public static HttpUrl url(String path)
+	{
+		return BASE_URL.resolve(path);
 	}
 }
