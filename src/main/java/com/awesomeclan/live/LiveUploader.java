@@ -1,10 +1,9 @@
 package com.awesomeclan.live;
 
-import com.awesomeclan.AwesomeClanConfig;
 import com.awesomeclan.api.ApiClient;
-import com.awesomeclan.api.PluginTokens;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -20,11 +19,9 @@ class LiveUploader
 	@Inject
 	private ApiClient api;
 
-	@Inject
-	private AwesomeClanConfig config;
-
 	private boolean requestInFlight;
 	private LivePayload queuedPayload;
+	private CompletableFuture<Void> queuedFuture;
 	private String matchedToken;
 	private int nextTokenIndex;
 
@@ -32,25 +29,39 @@ class LiveUploader
 	{
 		matchedToken = null;
 		nextTokenIndex = 0;
-		queuedPayload = null;
+		// don't drop a queued logout
+		if (queuedPayload != null && !queuedPayload.isLoggedOut())
+		{
+			queuedPayload = null;
+			queuedFuture.complete(null);
+			queuedFuture = null;
+		}
 	}
 
-	synchronized void upload(LivePayload payload)
+	synchronized CompletableFuture<Void> upload(LivePayload payload)
 	{
+		CompletableFuture<Void> future = new CompletableFuture<>();
 		if (requestInFlight)
 		{
+			if (queuedFuture != null)
+			{
+				queuedFuture.complete(null);
+			}
 			queuedPayload = payload;
-			return;
+			queuedFuture = future;
+			return future;
 		}
 
-		send(payload);
+		send(payload, future);
+		return future;
 	}
 
-	private void send(LivePayload payload)
+	private void send(LivePayload payload, CompletableFuture<Void> future)
 	{
 		String token = matchedToken != null ? matchedToken : nextCandidateToken();
 		if (token == null)
 		{
+			future.complete(null);
 			return;
 		}
 
@@ -62,6 +73,7 @@ class LiveUploader
 			{
 				log.warn("Live data submit failed", e);
 				onRequestFinished();
+				future.complete(null);
 			}
 
 			@Override
@@ -85,6 +97,7 @@ class LiveUploader
 					log.warn("Live data submit failed with HTTP {}", response.code());
 				}
 				onRequestFinished();
+				future.complete(null);
 			}
 		});
 	}
@@ -95,14 +108,16 @@ class LiveUploader
 		if (queuedPayload != null)
 		{
 			LivePayload next = queuedPayload;
+			CompletableFuture<Void> nextFuture = queuedFuture;
 			queuedPayload = null;
-			send(next);
+			queuedFuture = null;
+			send(next, nextFuture);
 		}
 	}
 
 	private String nextCandidateToken()
 	{
-		List<String> tokens = PluginTokens.parse(config.pluginToken());
+		List<String> tokens = api.tokens();
 		if (tokens.isEmpty())
 		{
 			return null;
